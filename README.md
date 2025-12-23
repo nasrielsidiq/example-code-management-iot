@@ -1,59 +1,195 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# IoT Management System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikasi Laravel untuk management IoT, monitoring data suhu dan kelembapan, serta kontrol 3 lampu.
 
-## About Laravel
+## Instalasi
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+```bash
+# Clone repository
+git clone <repository-url>
+cd test
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+# Install dependencies
+composer install
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+# Setup environment
+cp .env.example .env
+php artisan key:generate
 
-## Learning Laravel
+# Setup database
+php artisan migrate
+php artisan db:seed
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+# Start server
+php artisan serve
+```
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Fitur
 
-## Laravel Sponsors
+- **Monitoring Sensor**: Data suhu & kelembapan real-time
+- **Device Management**: Status koneksi dan last seen device
+- **Lamp Control**: Kontrol on/off 3 lampu via dashboard web
+- **API Authentication**: Keamanan menggunakan API key dan device ID
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Penggunaan
 
-### Premium Partners
+### Web Dashboard
+Akses dashboard di: `http://localhost:8000/dashboard`
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### IoT Device Setup
+1. Gunakan kode ESP32 di file `esp32_example.ino`
+2. Update WiFi credentials dan server URL
+3. Upload ke ESP32 dengan sensor DHT22
 
-## Contributing
+## API Documentation
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Base URL: `http://localhost:8000/api/device`
 
-## Code of Conduct
+### Authentication
+Semua endpoint memerlukan headers:
+```
+API-KEY: your_api_key
+Device-Id: your_device_id
+```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Endpoints
 
-## Security Vulnerabilities
+#### 1. Check Connection
+```http
+POST /api/device/check
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**Response:**
+```json
+{
+  "status": "connected",
+  "device": "Temperature Sensor 1"
+}
+```
+
+#### 2. Send Sensor Data
+```http
+POST /api/device/sensor-data
+Content-Type: application/json
+
+{
+  "temperature": 25.5,
+  "humidity": 60.2
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success"
+}
+```
+
+#### 3. Get Lamp Status
+```http
+GET /api/device/lamps
+```
+
+**Response:**
+```json
+[
+  {
+    "id": 1,
+    "name": "Living Room Lamp",
+    "status": false
+  },
+  {
+    "id": 2,
+    "name": "Kitchen Lamp", 
+    "status": true
+  },
+  {
+    "id": 3,
+    "name": "Bedroom Lamp",
+    "status": false
+  }
+]
+```
+
+#### 4. Update Lamp Status
+```http
+POST /api/device/lamps
+Content-Type: application/json
+
+{
+  "lamp_id": 1,
+  "status": true
+}
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "lamp": {
+    "id": 1,
+    "name": "Living Room Lamp",
+    "status": true
+  }
+}
+```
+
+### Error Responses
+
+#### 401 Unauthorized
+```json
+{
+  "error": "Unauthorized"
+}
+```
+
+#### 422 Validation Error
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "temperature": ["The temperature field is required."]
+  }
+}
+```
+
+## Database Schema
+
+### devices
+- `id` - Primary key
+- `device_id` - Unique device identifier
+- `api_key` - Authentication key
+- `name` - Device name
+- `last_seen` - Last connection timestamp
+
+### sensor_data
+- `id` - Primary key
+- `device_id` - Foreign key to devices
+- `temperature` - Temperature value (decimal 5,2)
+- `humidity` - Humidity value (decimal 5,2)
+- `created_at` - Timestamp
+
+### lamp_controls
+- `id` - Primary key
+- `name` - Lamp name
+- `status` - On/off status (boolean)
+
+## Hardware Requirements
+
+- ESP32 microcontroller
+- DHT22 temperature/humidity sensor
+- 3 relay modules for lamp control
+- WiFi connection
+
+## Wiring ESP32
+
+```
+DHT22 -> GPIO 2
+Lamp 1 Relay -> GPIO 5
+Lamp 2 Relay -> GPIO 18
+Lamp 3 Relay -> GPIO 19
+```
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+MIT License
